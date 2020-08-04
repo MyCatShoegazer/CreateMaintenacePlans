@@ -30,6 +30,7 @@ WHERE
 
 IF (@_advanced_ops <> 1)
 BEGIN
+	PRINT N'Включение расширенных опций хранимых процедур...'
 	EXEC sp_configure 'show advanced options', 1
 	RECONFIGURE
 END
@@ -44,6 +45,7 @@ WHERE
 
 IF (@_xps_enable <> 1)
 BEGIN
+	PRINT N'Активация Agent XPs...'
 	EXEC sp_configure 'Agent XPs', 1
 	RECONFIGURE
 END
@@ -83,6 +85,8 @@ GO
 	возникновения непредвиденных ошибок в работе СУБД, что может повлечь за
 	собой нарушение целостности или утрату данных.
 */
+
+PRINT N'Создание задачи обновления статистики...'
 
 DECLARE @_dbName AS VARCHAR(40) = 
 	(SELECT value FROM _variables WHERE variable = 'dbName')
@@ -172,6 +176,9 @@ GO
 	возникновения непредвиденных ошибок в работе СУБД, что может повлечь за
 	собой нарушение целостности или утрату данных.
 */
+
+PRINT N'Создание задачи дефрагментации индексов...'
+
 DECLARE @_dbName AS VARCHAR(40) = 
 	(SELECT value FROM _variables WHERE variable = 'dbName')
 DECLARE @_job_name AS VARCHAR(40) = @_dbName + '_index_defrag';
@@ -262,6 +269,8 @@ GO
 	возникновения непредвиденных ошибок в работе СУБД, что может повлечь за
 	собой нарушение целостности или утрату данных.
 */
+PRINT N'Создание задачи реиндексации таблиц...'
+
 DECLARE @_dbName AS VARCHAR(40) = 
 	(SELECT value FROM _variables WHERE variable = 'dbName')
 DECLARE @_job_name AS VARCHAR(40) = @_dbName + '_table_reindex';
@@ -347,6 +356,8 @@ GO
 	что его содержимое нужно только в контексте выполнения
 	данного сценария.
 */
+PRINT N'Удаление временной таблицы параметров...'
+
 IF EXISTS 
 	(SELECT * FROM sys.sysobjects WHERE name = '_variables' and xtype = 'U')
 		DROP TABLE _variables
