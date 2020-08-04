@@ -53,7 +53,7 @@ CREATE TABLE _variables (
 GO
 
 INSERT INTO _variables (variable, value) VALUES
-	('dbName', 'AdventureWorks')	-- имя базы данных
+	('dbName', 'AdventureWorks2014')	-- имя базы данных
 GO
 /*===========================================================================*/
 
