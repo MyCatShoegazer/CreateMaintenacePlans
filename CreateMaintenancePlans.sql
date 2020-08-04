@@ -53,7 +53,13 @@ CREATE TABLE _variables (
 GO
 
 INSERT INTO _variables (variable, value) VALUES
-	('dbName', 'AdventureWorks2014')	-- имя базы данных
+	('dbName', 'AdventureWorks2014'),	-- имя базы данных
+	('statsStartTime', '180000'), 		-- время начала обновления статистики
+	('statsFreqInterval', '1'),			-- частота обновления статистики в днях
+	('defragStartTime', '200000'), 		-- время начала дефрагментации индексов
+	('defragFreqInterval', '1'),		-- частота дефрагментации индексов в днях
+	('reindexStartTime', '220000'), 	-- время начала реиндексации таблиц
+	('reindexFreqInterval', '1')		-- частота реиндексации таблиц в днях
 GO
 /*===========================================================================*/
 
@@ -107,11 +113,14 @@ BEGIN
 		@schedule_id = @_schedule_id;
 END
 
+DECLARE @_active_start_time AS INT = (SELECT CAST(value AS INT) from _variables WHERE variable = 'statsStartTime')
+DECLARE @_freq_interval AS INT = (SELECT CAST(value as INT) FROM _variables WHERE variable = 'statsFreqInterval')
+
 EXEC dbo.sp_add_schedule
 	@schedule_name = @_schedule_name,
 	@freq_type = 4,
-	@freq_interval = 1,
-	@active_start_time = 233000;
+	@freq_interval = @_freq_interval,
+	@active_start_time = @_active_start_time;
 
 EXEC sp_attach_schedule
 	@job_name = @_job_name,
@@ -168,11 +177,14 @@ BEGIN
 		@schedule_id = @_schedule_id;
 END
 
+DECLARE @_active_start_time AS INT = (SELECT CAST(value AS INT) from _variables WHERE variable = 'defragStartTime')
+DECLARE @_freq_interval AS INT = (SELECT CAST(value as INT) FROM _variables WHERE variable = 'defragFreqInterval')
+
 EXEC dbo.sp_add_schedule
 	@schedule_name = @_schedule_name,
 	@freq_type = 4,
-	@freq_interval = 1,
-	@active_start_time = 210000;
+	@freq_interval = @_freq_interval,
+	@active_start_time = @_active_start_time;
 
 EXEC sp_attach_schedule
 	@job_name = @_job_name,
@@ -229,11 +241,14 @@ BEGIN
 		@schedule_id = @_schedule_id;
 END
 
+DECLARE @_active_start_time AS INT = (SELECT CAST(value AS INT) from _variables WHERE variable = 'reindexStartTime')
+DECLARE @_freq_interval AS INT = (SELECT CAST(value as INT) FROM _variables WHERE variable = 'reindexFreqInterval')
+
 EXEC dbo.sp_add_schedule
 	@schedule_name = @_schedule_name,
 	@freq_type = 4,
-	@freq_interval = 1,
-	@active_start_time = 224500;
+	@freq_interval = @_freq_interval,
+	@active_start_time = @_active_start_time;
 
 EXEC sp_attach_schedule
 	@job_name = @_job_name,
