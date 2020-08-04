@@ -21,7 +21,13 @@ GO
 	агент XPs.
 */
 DECLARE @_advanced_ops AS sql_variant;
-SELECT @_advanced_ops = value FROM sys.configurations WHERE name = 'show advanced options'
+SELECT 
+	@_advanced_ops = value 
+FROM
+	sys.configurations 
+WHERE
+	name = 'show advanced options'
+
 IF (@_advanced_ops <> 1)
 BEGIN
 	EXEC sp_configure 'show advanced options', 1
@@ -29,7 +35,13 @@ BEGIN
 END
 
 DECLARE @_xps_enable AS sql_variant;
-SELECT @_xps_enable = value FROM sys.configurations WHERE name = 'Agent XPs'
+SELECT 
+	@_xps_enable = value 
+FROM
+	sys.configurations
+WHERE
+	name = 'Agent XPs'
+
 IF (@_xps_enable <> 1)
 BEGIN
 	EXEC sp_configure 'Agent XPs', 1
@@ -42,8 +54,9 @@ END
 	блоков кода, будет удобным использовать временную таблицу
 	для хранения значений параметров планов обслуживания.
 */
-IF EXISTS (SELECT * FROM sys.sysobjects WHERE name = '_variables' and xtype = 'U')
-	DROP TABLE _variables
+IF EXISTS 
+	(SELECT * FROM sys.sysobjects WHERE name = '_variables' and xtype = 'U')
+		DROP TABLE _variables
 GO
 
 CREATE TABLE _variables (
@@ -57,7 +70,7 @@ INSERT INTO _variables (variable, value) VALUES
 	('statsStartTime', '180000'), 		-- время начала обновления статистики
 	('statsFreqInterval', '1'),			-- частота обновления статистики в днях
 	('defragStartTime', '200000'), 		-- время начала дефрагментации индексов
-	('defragFreqInterval', '1'),		-- частота дефрагментации индексов в днях
+	('defragFreqInterval', '1'),		-- частота дефрагментации в днях
 	('reindexStartTime', '220000'), 	-- время начала реиндексации таблиц
 	('reindexFreqInterval', '1')		-- частота реиндексации таблиц в днях
 GO
@@ -71,7 +84,8 @@ GO
 	собой нарушение целостности или утрату данных.
 */
 
-DECLARE @_dbName AS VARCHAR(40) = (SELECT value FROM _variables WHERE variable = 'dbName')
+DECLARE @_dbName AS VARCHAR(40) = 
+	(SELECT value FROM _variables WHERE variable = 'dbName')
 DECLARE @_job_name AS VARCHAR(40) = @_dbName + '_stats_update';
 
 DECLARE @_job_id BINARY(16);
@@ -106,15 +120,37 @@ EXEC dbo.sp_add_jobstep
 
 DECLARE @_schedule_name AS VARCHAR(80) = @_job_name + '_schedule';
 DECLARE @_schedule_id AS INT;
-SELECT @_schedule_id = schedule_id FROM sysschedules WHERE name = @_schedule_name
+SELECT
+	@_schedule_id = schedule_id
+FROM
+	sysschedules
+WHERE
+	name = @_schedule_name
+
 IF (@_schedule_id IS NOT NULL)
 BEGIN
 	EXEC dbo.sp_delete_schedule
 		@schedule_id = @_schedule_id;
 END
 
-DECLARE @_active_start_time AS INT = (SELECT CAST(value AS INT) from _variables WHERE variable = 'statsStartTime')
-DECLARE @_freq_interval AS INT = (SELECT CAST(value as INT) FROM _variables WHERE variable = 'statsFreqInterval')
+DECLARE @_active_start_time AS INT = 
+	(
+		SELECT
+			CAST(value AS INT)
+		FROM
+			_variables
+		WHERE
+			variable = 'statsStartTime'
+	)
+DECLARE @_freq_interval AS INT = 
+	(
+		SELECT
+			CAST(value as INT)
+		FROM
+			_variables
+		WHERE
+			variable = 'statsFreqInterval'
+	)
 
 EXEC dbo.sp_add_schedule
 	@schedule_name = @_schedule_name,
@@ -136,7 +172,8 @@ GO
 	возникновения непредвиденных ошибок в работе СУБД, что может повлечь за
 	собой нарушение целостности или утрату данных.
 */
-DECLARE @_dbName AS VARCHAR(40) = (SELECT value FROM _variables WHERE variable = 'dbName')
+DECLARE @_dbName AS VARCHAR(40) = 
+	(SELECT value FROM _variables WHERE variable = 'dbName')
 DECLARE @_job_name AS VARCHAR(40) = @_dbName + '_index_defrag';
 
 DECLARE @_job_id BINARY(16);
@@ -150,18 +187,21 @@ END
 EXEC dbo.sp_add_job
 	@job_name = @_job_name,
 	@enabled = 1,
-	@description = N'Permorms defragmentation of all indexes in target database.';
+	@description = N'Permorms defragmentation of all indexes in database.';
 
 EXEC dbo.sp_add_jobserver
 	@job_name = @_job_name;
 
 DECLARE @_command AS NVARCHAR(MAX) =
 	N'USE [' + @_dbName + '];' +
-	FORMATMESSAGE('EXEC sp_msforeachtable N''DBCC INDEXDEFRAG (%s, ''''?'''')''', @_dbName)
+	FORMATMESSAGE(
+		'EXEC sp_msforeachtable N''DBCC INDEXDEFRAG (%s, ''''?'''')''',
+		@_dbName
+	)
 
 EXEC dbo.sp_add_jobstep
 	@job_name = @_job_name,
-	@step_name = N'Perform defragmentation of all indexes in target database for each table.',
+	@step_name = N'Perform indexes defragmentation in database for each table.',
 	@subsystem = N'TSQL',
 	@command = @_command,
 	@database_name = @_dbName,
@@ -170,15 +210,37 @@ EXEC dbo.sp_add_jobstep
 
 DECLARE @_schedule_name AS VARCHAR(80) = @_job_name + '_schedule';
 DECLARE @_schedule_id AS INT;
-SELECT @_schedule_id = schedule_id FROM sysschedules WHERE name = @_schedule_name
+SELECT 
+	@_schedule_id = schedule_id
+FROM
+	sysschedules
+WHERE 
+	name = @_schedule_name
+
 IF (@_schedule_id IS NOT NULL)
 BEGIN
 	EXEC dbo.sp_delete_schedule
 		@schedule_id = @_schedule_id;
 END
 
-DECLARE @_active_start_time AS INT = (SELECT CAST(value AS INT) from _variables WHERE variable = 'defragStartTime')
-DECLARE @_freq_interval AS INT = (SELECT CAST(value as INT) FROM _variables WHERE variable = 'defragFreqInterval')
+DECLARE @_active_start_time AS INT = 
+	(
+		SELECT 
+			CAST(value AS INT) 
+		FROM 
+			_variables 
+		WHERE 
+			variable = 'defragStartTime'
+	)
+DECLARE @_freq_interval AS INT = 
+	(
+		SELECT
+			CAST(value as INT)
+		FROM
+			_variables
+		WHERE 
+			variable = 'defragFreqInterval'
+	)
 
 EXEC dbo.sp_add_schedule
 	@schedule_name = @_schedule_name,
@@ -200,7 +262,8 @@ GO
 	возникновения непредвиденных ошибок в работе СУБД, что может повлечь за
 	собой нарушение целостности или утрату данных.
 */
-DECLARE @_dbName AS VARCHAR(40) = (SELECT value FROM _variables WHERE variable = 'dbName')
+DECLARE @_dbName AS VARCHAR(40) = 
+	(SELECT value FROM _variables WHERE variable = 'dbName')
 DECLARE @_job_name AS VARCHAR(40) = @_dbName + '_table_reindex';
 
 DECLARE @_job_id BINARY(16);
@@ -234,15 +297,37 @@ EXEC dbo.sp_add_jobstep
 
 DECLARE @_schedule_name AS VARCHAR(80) = @_job_name + '_schedule';
 DECLARE @_schedule_id AS INT;
-SELECT @_schedule_id = schedule_id FROM sysschedules WHERE name = @_schedule_name
+SELECT 
+	@_schedule_id = schedule_id
+FROM 
+	sysschedules
+WHERE
+	name = @_schedule_name
+
 IF (@_schedule_id IS NOT NULL)
 BEGIN
 	EXEC dbo.sp_delete_schedule
 		@schedule_id = @_schedule_id;
 END
 
-DECLARE @_active_start_time AS INT = (SELECT CAST(value AS INT) from _variables WHERE variable = 'reindexStartTime')
-DECLARE @_freq_interval AS INT = (SELECT CAST(value as INT) FROM _variables WHERE variable = 'reindexFreqInterval')
+DECLARE @_active_start_time AS INT = 
+	(
+		SELECT 
+			CAST(value AS INT) 
+		FROM 
+			_variables 
+		WHERE
+			variable = 'reindexStartTime'
+	)
+DECLARE @_freq_interval AS INT = 
+	(
+		SELECT 
+			CAST(value as INT) 
+		FROM 
+			_variables
+		WHERE 
+			variable = 'reindexFreqInterval'
+	)
 
 EXEC dbo.sp_add_schedule
 	@schedule_name = @_schedule_name,
@@ -262,6 +347,7 @@ GO
 	что его содержимое нужно только в контексте выполнения
 	данного сценария.
 */
-IF EXISTS (SELECT * FROM sys.sysobjects WHERE name = '_variables' and xtype = 'U')
-	DROP TABLE _variables
+IF EXISTS 
+	(SELECT * FROM sys.sysobjects WHERE name = '_variables' and xtype = 'U')
+		DROP TABLE _variables
 GO
